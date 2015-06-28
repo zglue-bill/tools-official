@@ -1,3 +1,13 @@
+*.o
+*.a
+*.d
+*.i
+*~
+.swp
+.*.swp
+core
+.gdbinit
+cscope.out
 kconfig-frontends/Makefile
 kconfig-frontends/autom4te.cache/
 kconfig-frontends/config.log
