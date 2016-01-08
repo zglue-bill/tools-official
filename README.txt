@@ -1,5 +1,5 @@
-misc/tools/README.txt
-=====================
+tools/README.txt
+================
 
 Contents:
 
