@@ -35,6 +35,8 @@
  *
  ****************************************************************************/
 
+#define NXFUSE_VERSION  "1.1"
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -87,7 +89,7 @@ int main(int argc, char *argv[])
   int                   confirm = 0;
   int                   generic = 0;
   int                   opt_mkfs = 0;
-  int                   opt_help = 0;
+  int                   no_mount = 0;
   char                  **fuse_argv;
   const char            *filename;
   char                  *mount_point;
@@ -108,7 +110,7 @@ int main(int argc, char *argv[])
    * as the standard FUSE -d -f -h -s -o and -V options. 
    */
 
-  while ((opt = getopt(argc, argv, "cde:fg:ho:l:mp:st:V")) != -1)
+  while ((opt = getopt(argc, argv, "cde:fg:ho:l:mp:st:Vv")) != -1)
   {
     switch (opt)
     {
@@ -123,7 +125,7 @@ int main(int argc, char *argv[])
     case 'h':
       /* Add this arg to the fuse_main args */
 
-      opt_help = 1;
+      no_mount = 1;
       fuse_argc++;
       fuse_argv = realloc(fuse_argv, sizeof(char *) * fuse_argc);
       fuse_argv[fuse_argc - 1] = "-h";
@@ -132,6 +134,7 @@ int main(int argc, char *argv[])
     case 'V':
       /* Add this arg to the fuse_main args */
 
+      no_mount = 1;
       fuse_argc++;
       fuse_argv = realloc(fuse_argv, sizeof(char *) * fuse_argc);
       fuse_argv[fuse_argc - 1] = "-V";
@@ -194,18 +197,24 @@ int main(int argc, char *argv[])
 
     case 'm':
       opt_mkfs = 1;
+      no_mount = 1;
       break;
 
     case 'g':
       generic = atoi(optarg);
       break;
 
+    case 'v':
+      printf("nxfuse version %s\n", NXFUSE_VERSION);
+      printf("Copyright (C) 2016 Ken Pettit.  All rights reserved.\n");
+      return 1;
+
     }
   }
 
   /* If mkfs or help option provided, then we only expect 1 arg */
 
-  if (opt_mkfs || opt_help)
+  if (no_mount)
     {
       /* We should have 1 args left */
 
@@ -216,13 +225,13 @@ int main(int argc, char *argv[])
         return -1;
       } 
 
-      if (opt_help) 
+      if (opt_mkfs) 
         {
-          mount_point = argv[optind];
+          filename = argv[optind];
         }
       else
         {
-          filename = argv[optind];
+          mount_point = argv[optind];
         }
     }
   else
@@ -250,11 +259,12 @@ int main(int argc, char *argv[])
 
   /* If no in help mode, mount the NuttX FS */
 
-  if (!opt_help)
+  if (!no_mount)
     {
       /* Try to virtually mount the NuttX Filesystem */
 
-      pinode = vmount(filename, mount_point, fs_type, erasesize, sectsize, pagesize);
+      pinode = vmount(filename, mount_point, fs_type, erasesize, sectsize, 
+                pagesize, generic);
       if (pinode == NULL)
         {
           /* Error mounting the NuttX filesystem */

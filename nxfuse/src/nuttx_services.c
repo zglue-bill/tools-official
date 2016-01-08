@@ -66,8 +66,8 @@ struct fs_ops_s
 {
   const char *  fs_name;
   void *        (*vmount)(const char *datasource, 
-                    const char *mount_point,
-                    int erasesize, int sectsize, int pagesize);
+                    const char *mount_point, int erasesize, 
+                    int sectsize, int pagesize, int generic);
   int           (*mkfs)(const char *datasource,
                     int erasesize, int sectsize, int pagesize,
                     int generic, int confirm);
@@ -91,15 +91,15 @@ extern const struct mountpt_operations nxffs_operations;
  ****************************************************************************/
 
 #ifdef CONFIG_FS_SMARTFS
-static void * smartfs_vmount(const char *datasource, 
-                const char *mount_point, int erasesize, int sectsize, int pagesize);
+static void * smartfs_vmount(const char *datasource, const char *mount_point, 
+                int erasesize, int sectsize, int pagesize, int generic);
 static int    smartfs_mkfs(const char *datasource,
                 int erasesize, int sectsize, int pagesize, int generic, int confirm);
 #endif
 
 #ifdef CONFIG_FS_NXFFS
-static void * nxffs_vmount(const char *datasource, 
-                const char *mount_point, int erasesize, int sectsize, int pagesize);
+static void * nxffs_vmount(const char *datasource, const char *mount_point, 
+                int erasesize, int sectsize, int pagesize, int generic);
 #endif
 
 /****************************************************************************
@@ -187,7 +187,7 @@ int register_blockdriver(FAR const char *path,
   struct inode *node;
   int    ret;
 
-  node = malloc(sizeof(struct inode) + strlen(path));
+  node = calloc(sizeof(struct inode) + strlen(path), 1);
   if (node == NULL)
     return -1;
 
@@ -320,7 +320,8 @@ int vdbg(const char *fmt, ...)
  ****************************************************************************/
 
 struct inode *vmount(const char *datasource, const char *mount_point,
-                const char *fs_type, int erasesize, int sectsize, int pagesize)
+                const char *fs_type, int erasesize, int sectsize, int pagesize,
+                int generic)
 {
   int   x;
   void  *fs_handle;
@@ -337,7 +338,7 @@ struct inode *vmount(const char *datasource, const char *mount_point,
           /* Mount this FS */
 
           fs_handle = g_fs_ops[x].vmount(datasource, mount_point,
-                      erasesize, sectsize, pagesize);
+                      erasesize, sectsize, pagesize, generic);
 
           /* Test if mount failed */
 
@@ -376,14 +377,17 @@ struct inode *vmount(const char *datasource, const char *mount_point,
 
 #ifdef CONFIG_FS_SMARTFS
 void *smartfs_vmount(const char *datasource, 
-          const char *mount_point,
-          int erasesize, int sectsize, int pagesize)
+          const char *mount_point, int erasesize, 
+          int sectsize, int pagesize, int generic)
 {
   int                     ret;
   int                     offset = 0;
   struct mtd_dev_s        *mtd;
   void                    *fshandle;
   struct inode            *blkdriver;
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  char                    blkname[20];
+#endif
 
   /* Try to create a filemtd device using the filename provided */
 
@@ -406,7 +410,24 @@ void *smartfs_vmount(const char *datasource,
 
   /* Setup the SmartFS */
 
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  
+  /* The generic parameter is the directory number to mount */
+
+  if (generic == 0)
+    {
+      /* If the root directory number is not specified,
+       * then default to 1.
+       */
+
+      generic++;
+    }
+
+  snprintf(blkname, sizeof(blkname), "/dev/smart0d%d", generic);
+  ret = open_blockdriver(blkname, 0, &blkdriver);
+#else
   ret = open_blockdriver("/dev/smart0", 0, &blkdriver);
+#endif
   ret = smartfs_operations.bind(blkdriver, NULL, &fshandle);
 
   if (ret != OK)
@@ -429,7 +450,7 @@ void *smartfs_vmount(const char *datasource,
 #ifdef CONFIG_FS_NXFFS
 void *nxffs_vmount(const char *datasource, 
           const char *mount_point,
-          int erasesize, int sectsize, int pagesize)
+          int erasesize, int sectsize, int pagesize, int generic)
 {
   int                     ret;
   int                     offset = 0;
@@ -522,7 +543,11 @@ static int smartfs_umount(struct inode *blkdriver, void *fshandle)
 
   /* Get the block driver */
 
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  ret = open_blockdriver("/dev/smart0d1", 0, &blkdriver);
+#else
   ret = open_blockdriver("/dev/smart0", 0, &blkdriver);
+#endif
   free(fshandle);
 
   /* The blkdriver private data is an MTD pointer */
@@ -531,7 +556,11 @@ static int smartfs_umount(struct inode *blkdriver, void *fshandle)
   filemtd_teardown(mtd);
 
   free(blkdriver->i_private);
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  unregister_blockdriver("/dev/smart0d1");
+#else
   unregister_blockdriver("/dev/smart0");
+#endif
 
   return ret;
 }
@@ -554,7 +583,8 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
 
   /* Try to mount the device to see if there is a format already */
 
-  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize);
+  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize,
+                0);
   if (fshandle != NULL)
     {
       /* Test if confirm was specified */
@@ -581,7 +611,11 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
     {
       printf("\nReformatting %s with smartfs format\n", datasource);
     }
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  ret = open_blockdriver("/dev/smart0d1", 0, &blkdriver);
+#else
   ret = open_blockdriver("/dev/smart0", 0, &blkdriver);
+#endif
 
   /* Perform a low-level SMART format */
 
@@ -600,8 +634,12 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   /* Unmount the datasource */
 
   smartfs_umount(blkdriver, fshandle);
-  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize);
+  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize, 0);
+#ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
+  ret = open_blockdriver("/dev/smart0d1", 0, &blkdriver);
+#else
   ret = open_blockdriver("/dev/smart0", 0, &blkdriver);
+#endif
 
   /* Now Write the filesystem to media.  Loop for each root dir entry and
    * allocate the reserved Root Dir Enty, then write a blank root dir for it.
@@ -613,7 +651,7 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   request.buffer = &type;
   x = 0;
 #ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS
-  for (; x < nrootdirs; x++)
+  for (; x < generic; x++)
 #endif
     {
       ret = blkdriver->u.i_bops->ioctl(blkdriver, BIOC_ALLOCSECT, SMARTFS_ROOT_DIR_SECTOR + x);

@@ -67,7 +67,8 @@ struct nxfuse_state
  *
  ****************************************************************************/
 struct inode *vmount(const char *filename, const char *mount_point, 
-        const char *fs_type, int erasesize, int sectsize, int pagesize);
+        const char *fs_type, int erasesize, int sectsize, int pagesize,
+        int generic);
 
 /****************************************************************************
  * Name: mkfs
