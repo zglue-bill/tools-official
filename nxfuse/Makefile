@@ -1,5 +1,5 @@
 # ==========================================================================
-#   Copyright (C) 2013-2015 Ken Pettit. All rights reserved.
+#   Copyright (C) 2016 Ken Pettit. All rights reserved.
 #   Author: Ken Pettit <pettitkd@gmail.com>
 #
 #   nxfuse is a Linux FUSE filesystem that allows native mounting of
