@@ -1,0 +1,81 @@
+.\" Manpage for nxfuse
+.TH NXFUSE "1" "January 2016" "1.0" "User Commands"
+.SH NAME
+nxfuse \- mount NuttX filesystems using FUSE
+.SH SYNOPSIS
+.B nxfuse
+[\fIOPTION\fR]... [\fIFUSE-OPTION\fR]... \fIdir\fR \fIdatasource\fR
+.PP
+.B nxfuse
+-h \fIdir\fR
+.PP
+.B nxfuse
+-m [\fIOPTION\fR]... \fIdatasource\fR
+.SH DESCRIPTION
+.\" Add any additional description here
+.PP
+Mount or create (-m option) a NuttX filesystem on \fIdatasource\fR (file or block device).  
+Using the first invocation format, the NuttX filesystem contained on \fIdatasource\fR will 
+be mounted as a native Linux filesystem at the mount point specified by \fIdir\fR.  As with
+and Linux mount point, this directory must exist prior to invocation of nxfuse.
+.SH OPTIONS
+.TP
+\fB\-e\fR erasesize 
+set the \fIdatasource\fR erase block size
+.TP
+.TP
+\fB\-g\fR fs_specific_data 
+sets generic, filesystem specific data used during mkfs
+.TP
+\fB\-l\fR sectsize
+set the filesystem logical sector size
+.TP
+\fB\-m\fR
+create (mkfs) a new NuttX filesystem on \fIdatasource\fR  
+.TP
+\fB\-p\fR pagesize
+set the \fIdatasource\fR page read/write size
+.TP
+\fB\-t\fR fstype
+specify the NuttX filesystem type (smartfs, nxffs, etc.)
+.SH FUSE-OPTIONS
+For a list of FUSE options, use the second invocation format or 'man fuse'.
+.SH EXAMPLES
+.LP
+.TP
+\fBdd\fR if=/dev/zero of=/tmp/smart.bin bs=1024 count=2048
+.PD 0
+.TP
+\fBnxfuse\fR -m -t smartfs /tmp/smart.bin
+.PD 1
+.IP
+Creates a RAM based, zero-filled 2 MByte file and initializes it with a new SmartFS filesystem (mkfs).
+Since no 
+.LP
+.TP
+\fBnxfuse\fR -t smartfs /tmp/smart /tmp/smart.bin
+.PD 1
+.IP
+Mounts the SmartFS filesystem contained within /tmp/smart.b at the mount point /tmp/smart
+.LP
+.TP
+\fBnxfuse\fR -t smartfs -e 2048 -o allow_other /tmp/smart /dev/loop0
+.PD 1
+.IP
+Mounts the SmartFS filesystem managed by the block device /dev/loop0 at the mount point /tmp/smart
+with a block erase size of 2KB.
+Since /dev/loop0 is a root acceess device, this command will likely need to be executed with sudo.  
+In this case, the -o allow_other FUSE option causes FUSE to setup the mount at /tmp/smart such that it
+can be accessed by any user.
+.SH AUTHOR
+Written by Ken Pettit.
+.SH "REPORTING BUGS"
+Report nxfuse bugs to pettitkd@gmail.com
+.SH COPYRIGHT
+Copyright \(co 2016 Ken Pettit
+License: BSD <http://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+fusermount(2) - Unmount a FUSE mount
