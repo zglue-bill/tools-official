@@ -1,5 +1,5 @@
 .\" Manpage for nxfuse
-.TH NXFUSE "1" "January 2016" "1.1" "User Commands"
+.TH NXFUSE "1" "January 2016" "1.2" "User Commands"
 .SH NAME
 nxfuse \- mount NuttX filesystems using FUSE
 .SH SYNOPSIS
@@ -77,6 +77,17 @@ Creates a RAM based, zero-filled 2 MByte file and initializes it with a new Smar
 .IP
 Mounts the SmartFS filesystem contained within /tmp/smart.b at the mount point /tmp/smart
 .LP
+.TP
+\fBdd\fR if=/dev/zero of=/tmp/nxffs.bin bs=1024 count=8192
+.PD 0
+.TP
+\fBmkdir\fR /tmp/nxffs
+.LP
+.TP
+\fBnxfuse\fR -t nxffs -e 32768 /tmp/nxffs /tmp/nxffs.bin
+.PD 1
+.IP
+Creates a RAM based, 8 MByte file, initializes it with a new NXFFS filesystem and mounts it at /tmp/nxffs.
 .TP
 \fBnxfuse\fR -t smartfs -e 2048 -o allow_other /tmp/smart /dev/loop0
 .PD 1

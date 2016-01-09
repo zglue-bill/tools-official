@@ -277,6 +277,7 @@ struct file
 {
   int               f_oflags;   /* Open mode flags */
   off_t             f_pos;      /* File position */
+  off_t             f_seekpos;  /* File seek position */
   FAR struct inode *f_inode;    /* Driver interface */
   void             *f_priv;     /* Per file driver private data */
 };

@@ -67,10 +67,10 @@ struct fs_ops_s
   const char *  fs_name;
   void *        (*vmount)(const char *datasource, 
                     const char *mount_point, int erasesize, 
-                    int sectsize, int pagesize, int generic);
+                    int sectsize, int pagesize, char * generic);
   int           (*mkfs)(const char *datasource,
                     int erasesize, int sectsize, int pagesize,
-                    int generic, int confirm);
+                    char *, int confirm);
   const struct mountpt_operations *pops;
 };
 
@@ -92,14 +92,14 @@ extern const struct mountpt_operations nxffs_operations;
 
 #ifdef CONFIG_FS_SMARTFS
 static void * smartfs_vmount(const char *datasource, const char *mount_point, 
-                int erasesize, int sectsize, int pagesize, int generic);
+                int erasesize, int sectsize, int pagesize, char * generic);
 static int    smartfs_mkfs(const char *datasource,
-                int erasesize, int sectsize, int pagesize, int generic, int confirm);
+                int erasesize, int sectsize, int pagesize, char * generic, int confirm);
 #endif
 
 #ifdef CONFIG_FS_NXFFS
 static void * nxffs_vmount(const char *datasource, const char *mount_point, 
-                int erasesize, int sectsize, int pagesize, int generic);
+                int erasesize, int sectsize, int pagesize, char * generic);
 #endif
 
 /****************************************************************************
@@ -321,7 +321,7 @@ int vdbg(const char *fmt, ...)
 
 struct inode *vmount(const char *datasource, const char *mount_point,
                 const char *fs_type, int erasesize, int sectsize, int pagesize,
-                int generic)
+                char * generic)
 {
   int   x;
   void  *fs_handle;
@@ -378,7 +378,7 @@ struct inode *vmount(const char *datasource, const char *mount_point,
 #ifdef CONFIG_FS_SMARTFS
 void *smartfs_vmount(const char *datasource, 
           const char *mount_point, int erasesize, 
-          int sectsize, int pagesize, int generic)
+          int sectsize, int pagesize, char * generic)
 {
   int                     ret;
   int                     offset = 0;
@@ -387,6 +387,7 @@ void *smartfs_vmount(const char *datasource,
   struct inode            *blkdriver;
 #ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
   char                    blkname[20];
+  int                     nrootdirs;
 #endif
 
   /* Try to create a filemtd device using the filename provided */
@@ -414,16 +415,17 @@ void *smartfs_vmount(const char *datasource,
   
   /* The generic parameter is the directory number to mount */
 
-  if (generic == 0)
+  nrootdirs = atoi(generic);
+  if (nrootdirs == 0)
     {
       /* If the root directory number is not specified,
        * then default to 1.
        */
 
-      generic++;
+      nrootdirs++;
     }
 
-  snprintf(blkname, sizeof(blkname), "/dev/smart0d%d", generic);
+  snprintf(blkname, sizeof(blkname), "/dev/smart0d%d", nrootdirs);
   ret = open_blockdriver(blkname, 0, &blkdriver);
 #else
   ret = open_blockdriver("/dev/smart0", 0, &blkdriver);
@@ -450,7 +452,7 @@ void *smartfs_vmount(const char *datasource,
 #ifdef CONFIG_FS_NXFFS
 void *nxffs_vmount(const char *datasource, 
           const char *mount_point,
-          int erasesize, int sectsize, int pagesize, int generic)
+          int erasesize, int sectsize, int pagesize, char * generic)
 {
   int                     ret;
   int                     offset = 0;
@@ -496,7 +498,7 @@ void *nxffs_vmount(const char *datasource,
  ****************************************************************************/
 
 int mkfs(const char *datasource, const char *fs_type, int erasesize, int sectsize,
-            int pagesize, int generic, int confirm)
+            int pagesize, char * generic, int confirm)
 {
   int   x;
   int   ret = -ENODEV;
@@ -573,7 +575,7 @@ static int smartfs_umount(struct inode *blkdriver, void *fshandle)
  ****************************************************************************/
 
 static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize, 
-        int pagesize, int generic, int confirm)
+        int pagesize, char * generic, int confirm)
 {
   int                     ret = OK, x;
   void                    *fshandle;
@@ -584,7 +586,7 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   /* Try to mount the device to see if there is a format already */
 
   fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize,
-                0);
+                "");
   if (fshandle != NULL)
     {
       /* Test if confirm was specified */
@@ -620,7 +622,7 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   /* Perform a low-level SMART format */
 
 #ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS
-  ret = blkdriver->u.i_bops->ioctl(blkdriver, BIOC_LLFORMAT, (sectsize << 16) | generic);
+  ret = blkdriver->u.i_bops->ioctl(blkdriver, BIOC_LLFORMAT, (sectsize << 16) | atoi(generic));
 #else
   ret = blkdriver->u.i_bops->ioctl(blkdriver, BIOC_LLFORMAT, sectsize << 16);
 #endif
@@ -634,7 +636,7 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   /* Unmount the datasource */
 
   smartfs_umount(blkdriver, fshandle);
-  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize, 0);
+  fshandle = smartfs_vmount(datasource, "/tmp", erasesize, sectsize, pagesize, "");
 #ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS 
   ret = open_blockdriver("/dev/smart0d1", 0, &blkdriver);
 #else
@@ -651,7 +653,7 @@ static int smartfs_mkfs(const char *datasource, int erasesize, int sectsize,
   request.buffer = &type;
   x = 0;
 #ifdef CONFIG_SMARTFS_MULTI_ROOT_DIRS
-  for (; x < generic; x++)
+  for (; x < atoi(generic); x++)
 #endif
     {
       ret = blkdriver->u.i_bops->ioctl(blkdriver, BIOC_ALLOCSECT, SMARTFS_ROOT_DIR_SECTOR + x);

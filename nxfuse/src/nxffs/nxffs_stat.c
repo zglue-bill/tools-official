@@ -129,6 +129,7 @@ int nxffs_stat(FAR struct inode *mountpt, FAR const char *relpath,
                FAR struct stat *buf)
 {
   FAR struct nxffs_volume_s *volume;
+  FAR struct nxffs_ofile_s  *pofile;
   struct nxffs_entry_s entry;
   int ret;
 
@@ -156,6 +157,29 @@ int nxffs_stat(FAR struct inode *mountpt, FAR const char *relpath,
 
   if (relpath && relpath[0] != '\0')
     {
+      /* Test if the file being stat'ed is an open file yet to be written */
+
+      pofile = volume->ofiles;
+      while (pofile != NULL)
+        {
+          if (strcmp(relpath, pofile->entry.name) == 0)
+            {
+              /* The file being stat'ed is an open file.  */
+
+              buf->st_blocks  = pofile->entry.datlen / (volume->geo.blocksize - SIZEOF_NXFFS_BLOCK_HDR);
+              buf->st_mode    = S_IFREG | S_IXOTH | S_IXGRP | S_IXUSR;
+              buf->st_size    = pofile->entry.datlen;
+              buf->st_atime   = pofile->entry.utc;
+              buf->st_mtime   = pofile->entry.utc;
+              buf->st_ctime   = pofile->entry.utc;
+
+              ret = OK;
+              goto errout_with_semaphore;
+            }
+
+          pofile = pofile->flink;
+        }
+      
       /* Not the top directory.. find the NXFFS inode with this name */
 
       ret = nxffs_findinode(volume, relpath, &entry);

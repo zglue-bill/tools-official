@@ -78,7 +78,7 @@ static int nxfuse_getattr(const char *path, struct stat *fs)
   /* Validate stat is implemented by VFS */
 
   if (pdata->pinode->u.i_mops->stat == NULL)
-    return -ENODEV;
+    return -ENOSYS;
 
   /* Remove leading '/' from path */
 
@@ -127,7 +127,7 @@ static int nxfuse_mkdir(const char *path, mode_t mode)
 
   if (pdata->pinode->u.i_mops->mkdir == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -160,7 +160,7 @@ static int nxfuse_unlink(const char *path)
 
   if (pdata->pinode->u.i_mops->unlink == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -193,7 +193,7 @@ static int nxfuse_rmdir(const char *path)
 
   if (pdata->pinode->u.i_mops->rmdir == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -226,7 +226,7 @@ static int nxfuse_rename(const char *path, const char *newpath)
 
   if (pdata->pinode->u.i_mops->rename == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path and newpath */
@@ -265,7 +265,7 @@ static int nxfuse_chmod(const char *path, mode_t mode)
   if (pdata->pinode->u.i_mops->open == NULL ||
       pdata->pinode->u.i_mops->ioctl == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path and newpath */
@@ -276,7 +276,7 @@ static int nxfuse_chmod(const char *path, mode_t mode)
     }
 
   filep = (struct file *) malloc(sizeof(struct file));
-  filep->f_pos = 0;
+  filep->f_seekpos = 0;
   filep->f_inode = pdata->pinode;
   filep->f_priv = NULL;
   filep->f_oflags = O_RDOK | O_WROK;
@@ -343,7 +343,7 @@ static int nxfuse_utime(const char *path, struct utimbuf *ubuf)
   if (pdata->pinode->u.i_mops->open == NULL ||
       pdata->pinode->u.i_mops->ioctl == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path and newpath */
@@ -354,7 +354,7 @@ static int nxfuse_utime(const char *path, struct utimbuf *ubuf)
     }
 
   filep = (struct file *) malloc(sizeof(struct file));
-  filep->f_pos = 0;
+  filep->f_seekpos = 0;
   filep->f_inode = pdata->pinode;
   filep->f_priv = NULL;
   filep->f_oflags = O_RDOK | O_WROK;
@@ -395,7 +395,7 @@ static int nxfuse_statfs(const char *path, struct statvfs *vfs)
 
   if (pdata->pinode->u.i_mops->statfs == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Stat the filesystem */
@@ -433,7 +433,7 @@ static int nxfuse_flush(const char *path, struct fuse_file_info *fi)
 
   if (pdata->pinode->u.i_mops->sync == NULL)
     {
-      return -ENODEV;
+      return OK;
     }
 
   /* Get our private file data from the FUSE file handle */
@@ -465,7 +465,7 @@ static int nxfuse_opendir(const char *path, struct fuse_file_info *fi)
 
   if (pdata->pinode->u.i_mops->opendir == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -513,7 +513,7 @@ static int nxfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   if (pdata->pinode->u.i_mops->readdir == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -603,7 +603,7 @@ static int nxfuse_open(const char *path, struct fuse_file_info *fi)
 
   if (pdata->pinode->u.i_mops->open == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -616,6 +616,7 @@ static int nxfuse_open(const char *path, struct fuse_file_info *fi)
   /* Allocate a private file data struct to track things */
 
   filep = (struct file *) malloc(sizeof(struct file));
+  filep->f_seekpos = 0;
   filep->f_pos = 0;
   filep->f_inode = pdata->pinode;
   filep->f_priv = NULL;
@@ -626,6 +627,14 @@ static int nxfuse_open(const char *path, struct fuse_file_info *fi)
   if (fi->flags & O_RDWR)
     {
       filep->f_oflags |= O_RDOK | O_WROK;
+    }
+  else if (fi->flags & O_WRONLY)
+    {
+      filep->f_oflags |= O_WROK;
+    }
+  else
+    {
+      filep->f_oflags |= O_RDOK;
     }
 
   mode = 0666;
@@ -677,7 +686,7 @@ static int nxfuse_create(const char *path, mode_t mode,
 
   if (pdata->pinode->u.i_mops->open == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Remove leading '/' from path */
@@ -690,7 +699,7 @@ static int nxfuse_create(const char *path, mode_t mode,
   /* Allocate a private file data struct to track things */
 
   filep = (struct file *) malloc(sizeof(struct file));
-  filep->f_pos = 0;
+  filep->f_seekpos = 0;
   filep->f_inode = pdata->pinode;
   filep->f_priv = NULL;
 
@@ -743,7 +752,7 @@ static int nxfuse_read(const char *path, char *buf, size_t size,
 
   if (pdata->pinode->u.i_mops->read == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Get our private file data from the FUSE file handle */
@@ -752,17 +761,17 @@ static int nxfuse_read(const char *path, char *buf, size_t size,
   
   /* Test if seek needed  */
 
-  if (filep->f_pos != offset)
+  if (filep->f_seekpos != offset)
     {
       /* Seek to new location */
 
       if (pdata->pinode->u.i_mops->seek == NULL)
         {
-          return -ENODEV;
+          return -ENOSYS;
         }
 
       pdata->pinode->u.i_mops->seek(filep, offset, SEEK_SET);
-      filep->f_pos = offset;
+      filep->f_seekpos = offset;
     }
 
   /* Perform the read */
@@ -773,7 +782,7 @@ static int nxfuse_read(const char *path, char *buf, size_t size,
 
   if (ret > 0)
     {
-      filep->f_pos += ret;
+      filep->f_seekpos += ret;
     }
 
   /* Return the number of bytes read */
@@ -799,7 +808,7 @@ static int nxfuse_write(const char *path, const char *buf, size_t size,
   /* Validate write is implemented by VFS */
 
   if (pdata->pinode->u.i_mops->write == NULL)
-    return -ENODEV;
+    return -ENOSYS;
 
   /* Get our private file data from the FUSE file handle */
 
@@ -807,17 +816,17 @@ static int nxfuse_write(const char *path, const char *buf, size_t size,
   
   /* Test if seek needed  */
 
-  if (filep->f_pos != offset)
+  if (filep->f_seekpos != offset)
     {
       /* Seek to new location */
 
       if (pdata->pinode->u.i_mops->seek == NULL)
         {
-          return -ENODEV;
+          return -ENOSYS;
         }
 
       pdata->pinode->u.i_mops->seek(filep, offset, SEEK_SET);
-      filep->f_pos = offset;
+      filep->f_seekpos = offset;
     }
 
   /* Perform the write */
@@ -828,7 +837,7 @@ static int nxfuse_write(const char *path, const char *buf, size_t size,
 
   if (ret > 0)
     {
-      filep->f_pos += ret;
+      filep->f_seekpos += ret;
     }
 
   /* Return the number of bytes read */
@@ -885,7 +894,7 @@ static int nxfuse_fsync(const char *path, int datasync, struct fuse_file_info *f
 
   if (pdata->pinode->u.i_mops->sync == NULL)
     {
-      return -ENODEV;
+      return -ENOSYS;
     }
 
   /* Get our private file data from the FUSE file handle */
@@ -928,7 +937,7 @@ static int nxfuse_fgetattr(const char *path, struct stat *fs,
   /* Validate stat is implemented by VFS */
 
   if (pdata->pinode->u.i_mops->stat == NULL)
-    return -ENODEV;
+    return -ENOSYS;
 
   /* Remove leading '/' from path */
 

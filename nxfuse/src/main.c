@@ -35,7 +35,7 @@
  *
  ****************************************************************************/
 
-#define NXFUSE_VERSION  "1.1"
+#define NXFUSE_VERSION  "1.2"
 
 /****************************************************************************
  * Included Files
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
   int                   pagesize = 0;
   int                   fuse_argc;
   int                   confirm = 0;
-  int                   generic = 0;
+  char *                generic = "";
   int                   opt_mkfs = 0;
   int                   no_mount = 0;
   char                  **fuse_argv;
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
       break;
 
     case 'g':
-      generic = atoi(optarg);
+      generic = optarg;
       break;
 
     case 'v':
@@ -269,6 +269,8 @@ int main(int argc, char *argv[])
         {
           /* Error mounting the NuttX filesystem */
 
+          printf("Unable to mount filesytem on %s of type %s\n",
+             mount_point, fs_type);
           return -1;
         }
 

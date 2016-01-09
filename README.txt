@@ -257,8 +257,8 @@ nxfuse
 ======
 
 A Linux FUSE implmentation that enables native mounting of NuttX filesystems
-in Linux.  Currently the implementation only supports SmartFS.  See the
-nxfuse/README.txt file for further information.
+in Linux.  Currently supports SmartFS and NXFFS (within the limitations of
+the NXFFS architecture).  See the nxfuse/README.txt file for further information.
 
 osmocon
 =======
