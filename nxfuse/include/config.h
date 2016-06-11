@@ -417,7 +417,7 @@
 /* Verbose debug and sub-system debug only make sense if debug is enabled */
 
 #ifndef CONFIG_DEBUG
-# undef CONFIG_DEBUG_VERBOSE
+# undef CONFIG_DEBUG_INFO
 # undef CONFIG_DEBUG_SCHED
 # undef CONFIG_DEBUG_MM
 # undef CONFIG_DEBUG_PAGING

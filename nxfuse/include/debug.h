@@ -75,7 +75,7 @@ int get_errno(void);
  *    handlers.
  *
  * [a-z]vdbg() -- Identical to [a-z]dbg() except that it also requires that
- *    CONFIG_DEBUG_VERBOSE be defined.  This is intended for general debug
+ *    CONFIG_DEBUG_INFO be defined.  This is intended for general debug
  *    output that you would normally want to suppress.
  *
  * [a-z]lldbg() -- Identical to [a-z]dbg() except this is uses special
@@ -90,7 +90,7 @@ int get_errno(void);
  *    example, only [a-z]lldbg() should be used in interrupt handlers.
  *
  * [a-z]llvdbg() -- Identical to [a-z]lldbg() except that it also requires that
- *    CONFIG_DEBUG_VERBOSE be defined.  This is intended for general debug
+ *    CONFIG_DEBUG_INFO be defined.  This is intended for general debug
  *    output that you would normally want to suppress.
  */
 
@@ -121,7 +121,7 @@ int get_errno(void);
 #  define lldbg(x...)
 # endif
 
-# ifdef CONFIG_DEBUG_VERBOSE
+# ifdef CONFIG_DEBUG_INFO
 #  define vdbg(format, ...) \
    syslog(LOG_DEBUG, EXTRA_FMT format EXTRA_ARG, ##__VA_ARGS__)
 
@@ -336,7 +336,7 @@ int get_errno(void);
 # ifndef CONFIG_ARCH_LOWPUTC
 #  define lldbg      (void)
 # endif
-# ifndef CONFIG_DEBUG_VERBOSE
+# ifndef CONFIG_DEBUG_INFO
 #  define vdbg       (void)
 #  define llvdbg     (void)
 # else
@@ -539,7 +539,7 @@ int get_errno(void);
 
 #ifdef CONFIG_DEBUG
 #  define dbgdumpbuffer(m,b,n) lib_dumpbuffer(m,b,n)
-#  ifdef CONFIG_DEBUG_VERBOSE
+#  ifdef CONFIG_DEBUG_INFO
 #    define vdbgdumpbuffer(m,b,n) lib_dumpbuffer(m,b,n)
 #  else
 #   define vdbgdumpbuffer(m,b,n)
@@ -686,7 +686,7 @@ int dbg(const char *format, ...);
 int lldbg(const char *format, ...);
 # endif
 
-# ifdef CONFIG_DEBUG_VERBOSE
+# ifdef CONFIG_DEBUG_INFO
 int vdbg(const char *format, ...);
 
 # ifdef CONFIG_ARCH_LOWPUTC
