@@ -185,6 +185,22 @@ gperf
 
    If you see this, make sure that the gperf package is installed.
 
+gperf 3.1
+---------
+
+Version 3.12.0 of kconfig-frontends here does not build with current gperf
+(version 3.1 released 2017-01-05). The current 4.11.0.1 release also has
+issues, but can be fixed with a change to just one line:
+
+Change line 175 of hconf.c from
+
+  kconf_id_lookup (register const char *str, register unsigned int len)
+
+to
+  kconf_id_lookup (register const char *str, register GPERF_LEN_TYPE len)
+
+With this change, upstream should build fine both with gperf 3.1 and older
+versions.  Fixing the older version distributed here would need more effort.
 
 kconfig-frontends for Windows
 -----------------------------
