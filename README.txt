@@ -32,7 +32,7 @@ kconfig-frontends
 General Build Instructions
 --------------------------
 
-  This is a snapshot of the kconfig-frontends version 3.12.0 tarball taken
+  This is a snapshot of the kconfig-frontends version 4.11.0.1 tarball taken
   from http://ymorin.is-a-geek.org/projects/kconfig-frontends.
 
   General build instructions:
@@ -185,12 +185,18 @@ gperf
 
    If you see this, make sure that the gperf package is installed.
 
-gperf 3.1
----------
+gperf 3.1 and above
+-------------------
 
-Version 3.12.0 of kconfig-frontends here does not build with current gperf
-(version 3.1 released 2017-01-05). The current 4.11.0.1 release also has
-issues, but can be fixed with a change to just one line:
+Version 3.12.0 of kconfig-frontends did not not build with gperf
+(version 3.1 released 2017-01-05).  A files suggested by Harald
+Gutsche  (Bitbucket Issue #1) is:  I changed the type in line 12 to size_t:
+
+static const struct kconf_id *kconf_id_lookup(register const char *str, register size_t len);
+
+Philiipp Krause also notes that current 4.11.0.1 release also has
+issues, but can be fixed with a change to just one line (also Bitbucket
+Issue #1)):
 
 Change line 175 of hconf.c from
 
@@ -200,7 +206,9 @@ to
   kconf_id_lookup (register const char *str, register GPERF_LEN_TYPE len)
 
 With this change, upstream should build fine both with gperf 3.1 and older
-versions.  Fixing the older version distributed here would need more effort.
+versions.
+
+NOTE:  This change has already been applied in the code base.
 
 kconfig-frontends for Windows
 -----------------------------
