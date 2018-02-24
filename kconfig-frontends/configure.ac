@@ -20,15 +20,7 @@ AC_CONFIG_MACRO_DIR([scripts/.autostuff/m4])
 #----------------------------------------
 # Prepare automake
 
-# We want to allow the user to override our default program-prefix,
-# so we must set-it now, before automake has a chance to interpret
-# it, but after the options are parsed, so as not to overwrite the
-# value (if any) set by the user
-AS_IF(
-    [test "$program_prefix" = NONE],
-    [program_prefix=kconfig-])
-
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # For releases, enable silent rules, unless the user explicitly
 # disables them.
@@ -38,12 +30,6 @@ AS_IF(
     [test "$(${srcdir}/scripts/version.sh --internal)" = "git"],
     [AM_SILENT_RULES],
     [AM_SILENT_RULES([yes])])
-
-AS_IF(
-    [test $AM_DEFAULT_VERBOSITY -eq 0],
-    [SILENT_MAKEFLAGS="--no-print-directory -s"],
-    [SILENT_MAKEFLAGS=""])
-AC_SUBST([SILENT_MAKEFLAGS])
 
 #----------------------------------------
 # Prepare libtool
@@ -131,6 +117,13 @@ AC_SUBST([enable_L10n], [${enable_L10n:-yes}])
 # Options to selectively enable/disable frontends
 # All are selected by default
 AC_ARG_ENABLE(
+    [kconfig],
+    [AS_HELP_STRING(
+        [--disable-kconfig],
+        [kconfig, the meta-frontend to all kconfig tools (default=yes)])])
+AC_SUBST([enable_kconfig], [${enable_kconfig:-yes}])
+
+AC_ARG_ENABLE(
     [conf],
     [AS_HELP_STRING(
         [--disable-conf],
@@ -210,12 +203,6 @@ AM_PROG_CC_C_O
 AC_PROG_CXX
 AC_C_INLINE
 AC_PROG_MAKE_SET
-AC_CHECK_PROGS(
-    [GPERF],
-    [gperf])
-AS_IF(
-    [test -z "$GPERF"],
-    [AC_MSG_ERROR([can not find gperf])])
 AS_IF(
     [test "$need_pkgconfig" = "yes"],
     [PKG_PROG_PKG_CONFIG()])
@@ -236,6 +223,46 @@ AS_IF(
         [test -z "$YACC_IN_PATH"],
         [AC_MSG_ERROR([can not find a parser generator (such as yacc or bison)])]))
 AC_SUBST([AM_YFLAGS], ["-t -l -p zconf"])
+
+#----------------------------------------
+# Special section to check for gperf.
+AC_CHECK_PROGS(
+    [GPERF],
+    [gperf])
+AS_IF(
+    [test -z "$GPERF"],
+    [AC_MSG_ERROR([can not find gperf])])
+
+# gperf 3.1 generates functions with 'size_t' instead of 'unsigned int'
+AC_MSG_CHECKING([for the type used in gperf declarations])
+GPERF_LEN_TYPE=
+AS_VAR_SET(
+    [GPERF_PROLOG],
+    [`echo foo,bar | ${GPERF} -L ANSI-C`])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+        [[
+        #include <string.h>
+        ${GPERF_PROLOG}
+        const char * in_word_set(const char *, size_t);
+        ]])
+    ],
+    [GPERF_LEN_TYPE='size_t'],
+    [
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM(
+            [[
+            #include <string.h>
+            ${GPERF_PROLOG}
+            const char * in_word_set(const char *, unsigned int);
+            ]])
+        ],
+        [GPERF_LEN_TYPE='unsigned int'],
+        [AC_MSG_RESULT([not size_t, not unsigned int. What else?])
+         AC_MSG_FAILURE([unable to detect the type used in gperf declarations])
+        ])])
+AC_MSG_RESULT([${GPERF_LEN_TYPE}])
+AC_SUBST([GPERF_LEN_TYPE])
 
 #----------------------------------------
 # Check for gettext, for the kconfig frontends
@@ -291,6 +318,10 @@ AS_IF(
         [$CURSES_LOC],
         [ncursesw/*],[ncurses_mconf_CPPFLAGS="$ncurses_mconf_CPPFLAGS -DNCURSES_WIDECHAR=1"])
      AC_SEARCH_LIBS(
+        [setupterm],
+        [tinfo],
+        [break])
+     AC_SEARCH_LIBS(
         [initscr],
         [ncursesw ncurses curses],
         [ac_ct_curses_lib_found=yes; break])
@@ -300,10 +331,6 @@ AS_IF(
             [test "$need_curses" = "yes"],
             [AC_MSG_ERROR([could not find curses library (frontends: mconf/nconf)])],
             [has_curses=no])])
-     AC_SEARCH_LIBS(
-        [setupterm],
-        [tinfo],
-        [break])
      ncurses_LIBS="$LIBS"
      LIBS=$LIBS_old])
 
@@ -374,22 +401,22 @@ AS_IF(
 AS_IF(
     [test "$need_qt" = "yes" -o "$need_qt" = "auto"],
     [PKG_CHECK_MODULES(
-        [qt4],
-        [QtCore QtGui Qt3Support],
+        [Qt5],
+        [Qt5Core Qt5Gui Qt5Widgets],
         [has_qt=yes; need_moc="$need_qt"],
         [AS_IF(
             [test "$need_qt" = "yes"],
-            [AC_MSG_ERROR([could not find QT4 headers and/or libraries (frontend: qconf)])],
+            [AC_MSG_ERROR([could not find Qt5 headers and/or libraries (frontend: qconf)])],
             [has_qt=no; need_moc=no])])])
 
-AC_ARG_VAR([MOC], [Qt meta object compiler (moc) command])
+AC_ARG_VAR([MOC], [Qt5 meta object compiler (moc) command])
 AS_IF(
     [test "$need_moc" = "yes" -o "$need_moc" = "auto"],
-    [QT4_BINDIR=`$PKG_CONFIG Qt --variable bindir`
+    [QT5_BINDIR=`$PKG_CONFIG Qt5Core --variable host_bins`
      AC_PATH_PROGS(
         [MOC],
-        [moc-qt4 moc],,
-        [$QT4_BINDIR:$PATH])
+        [moc-qt5 moc],,
+        [$QT5_BINDIR:$PATH])
      AS_IF(
         [test -n "$MOC"],
         [has_moc=yes],
@@ -435,6 +462,9 @@ AS_IF(
 #----------------------------------------
 # Setup automake conditional build
 AM_CONDITIONAL(
+    [COND_kconfig],
+    [test "$enable_kconfig" = "yes"])
+AM_CONDITIONAL(
     [COND_conf],
     [test "$enable_conf" = "yes"])
 AM_CONDITIONAL(
@@ -469,26 +499,6 @@ AC_SUBST(
     [m4_esyscmd_s([./scripts/version.sh --plain])])
 
 #----------------------------------------
-# Finalise
-AC_CONFIG_FILES([
-    Makefile
-    docs/Makefile
-    libs/Makefile
-    libs/images/Makefile
-    libs/lxdialog/Makefile
-    libs/parser/Makefile
-    frontends/Makefile
-    frontends/conf/Makefile
-    frontends/mconf/Makefile
-    frontends/nconf/Makefile
-    frontends/gconf/Makefile
-    frontends/qconf/Makefile
-    utils/Makefile
-    scripts/Makefile
-])
-AC_OUTPUT
-
-#----------------------------------------
 # Pretty-print the configuration settings
 [fe_list=]
 AS_IF([test "$enable_conf"  = "yes"], [fe_list="$fe_list conf" ])
@@ -496,6 +506,15 @@ AS_IF([test "$enable_gconf" = "yes"], [fe_list="$fe_list gconf"])
 AS_IF([test "$enable_mconf" = "yes"], [fe_list="$fe_list mconf"])
 AS_IF([test "$enable_nconf" = "yes"], [fe_list="$fe_list nconf"])
 AS_IF([test "$enable_qconf" = "yes"], [fe_list="$fe_list qconf"])
+# The meta frontend is handled separatly, below, because we do not
+# want it in the list of tools, kcfg_list.
+
+[kcfg_list="$fe_list"]
+AS_IF([test "$enable_utils" = "yes"], [kcfg_list="$kcfg_list diff merge tweak"])
+AS_IF([test "$has_gettext" = "yes"],  [kcfg_list="$kcfg_list gettext"])
+AC_SUBST([kcfg_list], [${kcfg_list}])
+
+AS_IF([test "$enable_kconfig" = "yes"], [fe_list=" kconfig$fe_list"])
 
 [lib_list=]
 AS_IF(
@@ -505,13 +524,25 @@ AS_IF(
     [test "$enable_static" = "yes"],
     [lib_list="$lib_list${lib_list:+,} static"])
 
+#----------------------------------------
+# Finalise
+# All generated files are generated by a Makefile rule, except Makefile
+# itself of course.
+# There is no generic solution in automake to generate a file from its
+# .in source, so we'd have to provide custom, hand-made rules, which is
+# not nice. So, we handle libs/parser/kconfig-parser.pc here.
+AC_CONFIG_FILES([
+    Makefile
+    libs/parser/kconfig-parser.pc
+])
+AC_OUTPUT
+
 AC_MSG_NOTICE()
 AC_MSG_NOTICE([Configured with:])
 AC_MSG_NOTICE([- parser library     :$lib_list])
 AC_MSG_NOTICE([  - root-menu prompt : $root_menu])
 AC_MSG_NOTICE([  - config prefix    : $config_prefix])
 AC_MSG_NOTICE([- frontends          :$fe_list])
-AC_MSG_NOTICE([  - transform name   : $program_transform_name])
 AC_MSG_NOTICE([  - localised        : $has_gettext])
 AC_MSG_NOTICE([- install utilities  : $enable_utils])
 AC_MSG_NOTICE([- CFLAGS CXXFLAGS    : $wall_CFLAGS $werror_CFLAGS])
