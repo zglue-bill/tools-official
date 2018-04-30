@@ -210,6 +210,9 @@ versions.
 
 NOTE:  This change has already been applied in the code base.
 
+See kconfig-frontends-3.12.0-sizet.patch for the 3.12.0 version.
+(from https://gist.github.com/KamilSzczygiel/d16a5d88075939578f7bd8fadd0907aa)
+
 kconfig-frontends for Windows
 -----------------------------
 
