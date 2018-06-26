@@ -3,6 +3,7 @@ tools/README.txt
 
 Contents:
 
+  o buildtest
   o genromfs-0.5.2.tar.gz
   o kconfig-frontends
     - General Build Instructions
@@ -15,6 +16,15 @@ Contents:
     - kconfig-frontends for Windows
     - Buildroot
   o nxfuse
+
+buildtest
+=========
+
+  This is a collection of adhoc scripts and data files that I used to
+  to perform build testing in conjunction with nuttx/tools/testbuild.sh.
+  These are not of general use as they are tied to my personal
+  development environment.  The concepts may be useful to others,
+  however, who may want to adapt this logic for their own purposes.
 
 genromfs-0.5.2.tar.gz
 =====================
