@@ -1,6 +1,8 @@
 sim/bas
 sim/configdata
 #sim/cxxtest
+sim/ipforward
+sim/minibasic
 sim/mount
 sim/mtdpart
 sim/mtdrwb
@@ -14,6 +16,9 @@ sim/nxlines
 #sim/nxwm
 sim/ostest
 #sim/pashello
+sim/pf_ieee802154
+sim/pktradio
+sim/sixlowpan
 sim/touchscreen
 sim/traveler
 sim/udgram
