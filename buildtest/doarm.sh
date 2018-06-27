@@ -26,17 +26,27 @@ if [ -z "$TESTLIST" ]; then
   TESTLIST=armlist.dat
 fi
 
-NUTTX=$PWD/../nuttx
-if [ ! -d "$NUTTX" ]; then
-  echo "Where are you?"
-  exit 1
+# Assume nuttx/ is at some directory above this one
+
+cd ..
+if [ -d nuttx ]; then
+  NUTTX=$PWD/nuttx
+else
+  cd ..
+  if [ -d nuttx ]; then
+    NUTTX=$PWD/nuttx
+  else
+    echo "Cant find nuttx/ directory"
+    exit 1
+  fi
 fi
 
-TESTBUILD=$NUTTX/tools/testbuild.sh
+cd $NUTTX
+TESTBUILD=tools/testbuild.sh
 if [ ! -x "$TESTBUILD" ]; then
   echo "Help!!! I can't find testbuild.sh"
   exit 1
 fi
 
-$TESTBUILD $OPTIONS $TESTLIST 1>armtest.log 2>&1
+$TESTBUILD $OPTIONS $WD/$TESTLIST 1>$WD/armtest.log 2>&1
 rm -f armlist.dat
