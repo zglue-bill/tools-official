@@ -1,11 +1,19 @@
 #!/bin/sh
 
-nuttx=../nuttx
-
 FILE=$1
 if [ -z "$FILE" ]; then
-  FILE=armlist.template
+  FILE=$PWD/armlist.template
 fi
+
+cd ..
+if [ ! -d nuttx ]; then
+  cd ..
+  if [ ! -d nuttx ]; then
+    echo "ERROR:  Cannot find the nuttx/ directory"
+  fi
+fi
+
+nuttx=$PWD/nuttx
 
 LIST=`cat $FILE`
 for line in $LIST; do
