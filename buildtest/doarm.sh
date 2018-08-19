@@ -13,7 +13,6 @@ rm -f armlist.dat
 if [ "X${HOSTOS}" == "XCygwin" ]; then
   TOOLCHAIN_BIN="/cygdrive/c/Program Files (x86)/GNU Tools ARM Embedded/4.9 2015q2/bin"
   cat armlist.template | sed -e "s/_EABIx/_EABIW/g" >armlist.dat
-  DEFLIST=armcygwin.dat
   OPTIONS="-w -c"
 else
   TOOLCHAIN_BIN="/usr/bin/gcc-arm-none-eabi-6-2017-q2-update/bin"
@@ -36,7 +35,7 @@ else
   if [ -d nuttx ]; then
     NUTTX=$PWD/nuttx
   else
-    echo "Cant find nuttx/ directory"
+    echo "Can't find nuttx/ directory"
     exit 1
   fi
 fi
@@ -49,4 +48,4 @@ if [ ! -x "$TESTBUILD" ]; then
 fi
 
 $TESTBUILD $OPTIONS $WD/$TESTLIST 1>$WD/armtest.log 2>&1
-rm -f armlist.dat
+rm -f $WD/armlist.dat
