@@ -3,6 +3,7 @@ sim/bas
 sim/configdata
 #sim/cxxtest
 sim/ipforward
+sim/loadable
 sim/minibasic
 sim/mount
 sim/mtdpart
