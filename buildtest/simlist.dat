@@ -21,6 +21,7 @@ sim/ostest
 sim/pf_ieee802154
 sim/pktradio
 sim/sixlowpan
+sim/spiffs
 sim/touchscreen
 sim/traveler
 sim/udgram
