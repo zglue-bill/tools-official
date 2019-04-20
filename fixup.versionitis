@@ -14,12 +14,15 @@ cd /usr/bin
 sudo ln -sf aclocal-1.16 aclocal-1.15
 sudo ln -sf automake-1.16 automake-1.15
 
-#
-# The standard build installs the kconfig frontend objects
-# into /usr/local yet for some reason does not ensure that
-# the front end binary executables is told to look there.
-# So, create a symlink from the default search location.
-#
-cd /usr/lib
-[ ! -e libkconfig-parser-4.11.0.so ] && sudo ln -sf /usr/local/lib/libkconfig-parser-4.11.0.so
-
+##
+## Well, turns out need to run ldconfig after the install.
+##
+## #
+## # The standard build installs the kconfig frontend objects
+## # into /usr/local yet for some reason does not ensure that
+## # the front end binary executables is told to look there.
+## # So, create a symlink from the default search location.
+## #
+## cd /usr/lib
+## [ ! -e libkconfig-parser-4.11.0.so ] && sudo ln -sf /usr/local/lib/libkconfig-parser-4.11.0.so
+##
